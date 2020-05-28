@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<plugin xmlns="http://apache.org/cordova/ns/plugins/1.0" xmlns:android="http://schemas.android.com/apk/res/android" id="cordova-plugin-locationtimer" version="0.1.0">
+   <name>LocationTimer</name>
+   <js-module name="LocationTimer" src="www/LocationTimer.js">
+      <clobbers target="cordova.plugins.locationtimer" />
+   </js-module>
+   <platform name="ios">
+      <config-file parent="/*" target="config.xml">
+         <feature name="LocationTimer">
+            <param name="ios-package" value="LocationTimer" />
+         </feature>
+      </config-file>
+      <source-file src="src/ios/LocationTimer.m" />
+   </platform>
+   <platform name="android">
+      <config-file parent="/*" target="res/xml/config.xml">
+         <feature name="LocationTimer">
+            <param name="android-package" value="com.cordova.plugin.locationtimer.LocationTimer" />
+         </feature>
+        </config-file>
+        <config-file parent="/*" target="AndroidManifest.xml">
+            <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+            <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+            <uses-permission android:name="android.permission.INTERNET" />
+        </config-file>
+
+        <config-file parent="/manifest/application" target="AndroidManifest.xml">
+            <service android:name="com.cordova.plugin.locationtimer.LocationTimerSv" android:exported="false" />
+        </config-file>
+
+
+      <source-file src="src/android/LocationTimer.java" target-dir="src/com/cordova/plugin/locationtimer" />
+      <source-file src="src/android/LocationTimerSv.java" target-dir="src/com/cordova/plugin/locationtimer" />
+   </platform>
+</plugin>
