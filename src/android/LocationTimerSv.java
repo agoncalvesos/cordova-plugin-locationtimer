@@ -14,6 +14,7 @@ import android.os.Bundle;
 import android.os.IBinder;
 import android.preference.PreferenceManager;
 import android.text.format.DateFormat;
+import android.util.Log;
 
 import org.json.JSONObject;
 
@@ -23,6 +24,8 @@ import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.Date;
+import java.util.Timer;
+import java.util.TimerTask;
 
 public class LocationTimerSv extends Service implements LocationListener {
 
@@ -31,70 +34,89 @@ public class LocationTimerSv extends Service implements LocationListener {
     private int timerString;
 
     @Override
-    public int onStartCommand(Intent intent, int flags, int startId) {
+    public void onCreate() {
+        super.onCreate();
 
         SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this);
-        trackedUUID = preferences.getString("trackedUUID", "");
-        postURL = preferences.getString("postURL", "");
-        timerString = preferences.getInt("timerString", 10);
+        trackedUUID = preferences.getString("LocationTimer_trackedUUID", "");
+        postURL = preferences.getString("LocationTimer_postURL", "");
+        timerString = preferences.getInt("LocationTimer_timerString", 10);
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
 
             LocationManager locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
 
-            locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, this.timerString * 1000, 0, this);
+            locationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, timerString * 1000, 0, this);
+            locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, timerString * 1000, 0, this);
+
+
+            new Timer().scheduleAtFixedRate(new TimerTask() {
+                @Override
+                public void run() {
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+                        postDataToServer(locationManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER));
+                    }
+                }
+            },0, timerString * 1000);
+
         }
 
-        return super.onStartCommand(intent, flags, startId);
     }
 
     @Override
     public void onLocationChanged(Location location) {
-        JSONObject jo = new JSONObject();
+        postDataToServer(location);
+    }
 
-        try {
-            //UUID address
-            jo.put("uuid", trackedUUID);
+    private void postDataToServer(Location location){
+        Thread thread = new Thread(() -> {
+            JSONObject jo = new JSONObject();
 
-            //lat
-            jo.put("latitude", location.getLatitude());
-
-            //lon
-            jo.put("longitude", location.getLongitude());
-
-            //timestamp
-            jo.put("timeStamp", DateFormat.format("dd-MM-yyyy HH:mm:ss", new Date()));
-
-            URL url = new URL(postURL);
-            HttpURLConnection urlConnection = (HttpURLConnection) url.openConnection();
             try {
-                urlConnection.setDoOutput(true);
-                urlConnection.setChunkedStreamingMode(0);
-                urlConnection.setRequestProperty("Content-Type", "application/json; utf-8");
+                //UUID address
+                jo.put("uuid", trackedUUID);
 
-                //OutputStream out = new BufferedOutputStream(urlConnection.getOutputStream());
-                try(OutputStream os = urlConnection.getOutputStream()) {
-                    byte[] input = jo.toString(2).getBytes("utf-8");
-                    os.write(input, 0, input.length);
-                }
+                //lat
+                jo.put("latitude", location.getLatitude());
 
-                try(BufferedReader br = new BufferedReader(
-                        new InputStreamReader(urlConnection.getInputStream(), "utf-8"))) {
-                    StringBuilder response = new StringBuilder();
-                    String responseLine = null;
-                    while ((responseLine = br.readLine()) != null) {
-                        response.append(responseLine.trim());
+                //lon
+                jo.put("longitude", location.getLongitude());
+
+                //timestamp
+                jo.put("timeStamp", DateFormat.format("dd-MM-yyyy HH:mm:ss", new Date()));
+
+                URL url = new URL(postURL);
+                HttpURLConnection urlConnection = (HttpURLConnection) url.openConnection();
+                try {
+                    urlConnection.setDoOutput(true);
+                    urlConnection.setChunkedStreamingMode(0);
+                    urlConnection.setRequestProperty("Content-Type", "application/json; utf-8");
+
+                    //OutputStream out = new BufferedOutputStream(urlConnection.getOutputStream());
+                    try (OutputStream os = urlConnection.getOutputStream()) {
+                        byte[] input = jo.toString(2).getBytes("utf-8");
+                        os.write(input, 0, input.length);
                     }
-                    System.out.println(response.toString());
+
+                    try (BufferedReader br = new BufferedReader(
+                            new InputStreamReader(urlConnection.getInputStream(), "utf-8"))) {
+                        StringBuilder response = new StringBuilder();
+                        String responseLine = null;
+                        while ((responseLine = br.readLine()) != null) {
+                            response.append(responseLine.trim());
+                        }
+                        System.out.println(response.toString());
+                    }
+
+                } finally {
+                    urlConnection.disconnect();
                 }
 
-            } finally {
-                urlConnection.disconnect();
+            } catch (Exception e) {
+                Log.d("post error", e.getMessage());
             }
-
-        } catch (Exception e) {
-
-        }
+        });
+        thread.start();
     }
 
     @Override
