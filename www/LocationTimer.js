@@ -1,5 +1,5 @@
 var exec = require('cordova/exec');
 
-exports.init = function (success, error, uuid, timer, postUrl) {
-    exec(success, error, 'LocationTimer', 'init', [uuid, timer, postUrl]);
+exports.init = function (success, error, uuid, postUrl, timer) {
+    exec(success, error, 'LocationTimer', 'initialize', [uuid, postUrl, timer]);
 };
