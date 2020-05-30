@@ -33,7 +33,7 @@ public class LocationTimer extends CordovaPlugin {
     public boolean execute(String action, JSONArray args, CallbackContext callbackContext) throws JSONException {
         this.callbackContext = callbackContext;
 
-        if (action.equals("init")) {
+        if (action.equals("initialize")) {
             //Checking if parameters are valid
 
             //UUID
