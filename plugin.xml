@@ -5,6 +5,8 @@
       <clobbers target="cordova.plugins.locationtimer" />
    </js-module>
    <platform name="ios">
+      <dependency id="cordova-plugin-add-swift-support" url="https://github.com/agoncalvesos/cordova-plugin-add-swift-support.git" />
+      
       <config-file parent="/*" target="config.xml">
          <feature name="LocationTimer">
             <param name="ios-package" value="LocationTimer" />
