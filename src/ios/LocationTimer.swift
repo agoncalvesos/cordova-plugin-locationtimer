@@ -112,7 +112,7 @@ class GeoNotificationManager : NSObject, CLLocationManagerDelegate {
                  
                 returnJSONParameters["latitude"] = self.locationManager.location?.coordinate.latitude
 
-                returnJSONParameters["longitude"] = self.locationManager.location?.coordinate.latitude
+                returnJSONParameters["longitude"] = self.locationManager.location?.coordinate.longitude
 
                 let now = Date()
                 let dateFormatter = DateFormatter()
